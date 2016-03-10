@@ -20,19 +20,19 @@
 int main(int argc, char* argv[])
 {
 
-    bool interpolateDepthFlag = 1;
+    bool interpolateDepthFlag = 0;
 
     bool saveColorAcqFlag   = 1;
-    bool saveDepthAcqFlag   = 1;
-    bool saveColorSyncFlag  = 1;
-    bool saveDepthSyncFlag  = 1;
-    bool saveConfidenceFlag = 1;
+    bool saveDepthAcqFlag   = 0;
+    bool saveColorSyncFlag  = 0;
+    bool saveDepthSyncFlag  = 0;
+    bool saveConfidenceFlag = 0;
 
     bool buildColorSyncFlag = saveColorSyncFlag;
     bool buildDepthSyncFlag = saveDepthSyncFlag;
     bool buildConfidenceFlag = saveConfidenceFlag;
 
-    int flagColorFormat = FORMAT_VGA_ID; // VGA, WXGA or NHD
+    int flagColorFormat = FORMAT_WXGA_ID; // VGA, WXGA or NHD
 
     int widthColor, heightColor;
     switch (flagColorFormat) {

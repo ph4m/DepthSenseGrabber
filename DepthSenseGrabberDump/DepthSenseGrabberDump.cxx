@@ -28,7 +28,7 @@
 using namespace DepthSense;
 using namespace std;
 
-string filenameReportColor;
+string filenameReportColor, filenameReportDepth;
 
 long seconds, useconds;
 std::chrono::high_resolution_clock::time_point timeStart, timeCurrent;
@@ -73,6 +73,7 @@ bool* hasData;
 // Color map configuration, comment out undesired parameters
 
 FrameFormat frameFormatColor;
+int widthDepth, heightDepth;
 int widthColor, heightColor, nPixelsColorAcq;
 uint8_t* pixelsColorAcq;
 uint16_t* pixelsDepthSync;
@@ -103,8 +104,6 @@ UV uvMapVGA[FORMAT_VGA_PIXELS];
 double timeStampSeconds;
 int timeStamp;
 clock_t clockStartGrab;
-
-int frameCount = -1;
 
 Context g_context;
 DepthNode g_dnode;
@@ -177,71 +176,19 @@ each pixel, expressed in meters. Saturated pixels are given the special value -2
 
 void onNewDepthSample(DepthNode node, DepthNode::NewSampleReceivedData data)
 {
-    // Initialize raw depth and UV maps
-    for (int currentPixelInd = 0; currentPixelInd < nPixelsDepthAcq; currentPixelInd++)
-    {
-        pixelsConfidenceAcqQVGA[currentPixelInd] = data.confidenceMap[currentPixelInd];
-        pixelsDepthSyncQVGA[currentPixelInd] = noDepthDefault;
-        uvMapAcqQVGA[currentPixelInd] = data.uvMap[currentPixelInd];
+    FrameDepth frameDepth(widthDepth, heightDepth);
+    timeCurrent = std::chrono::high_resolution_clock::now();
+    timeStamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
+    frameDepth.setTimeStamp(timeStamp);
+    int indexFrameDepth = g_dFrames;
+    frameDepth.setIndexFrame(indexFrameDepth);
+    frameDepth.importDepthMap(data);
 
-        pixelsDepthAcq[currentPixelInd] = data.depthMap[currentPixelInd];
-
-    }
-
-    // Do not interpolate
-    for (int currentPixelInd = 0; currentPixelInd < FORMAT_QVGA_PIXELS; currentPixelInd++)
-    {
-        uvToColorPixelInd(uvMapAcqQVGA[currentPixelInd], widthColor, heightColor, &colorPixelInd, &colorPixelRow, &colorPixelCol);
-        if (colorPixelInd != -1) {
-            pixelsDepthSync[colorPixelInd] = pixelsDepthAcq[currentPixelInd];
-            pixelsColorSyncQVGA[3*currentPixelInd] = pixelsColorAcq[3*colorPixelInd];
-            pixelsColorSyncQVGA[3*currentPixelInd+1] = pixelsColorAcq[3*colorPixelInd+1];
-            pixelsColorSyncQVGA[3*currentPixelInd+2] = pixelsColorAcq[3*colorPixelInd+2];
-        }
-    }
+    string filenameDepth = FrameDepth::formatFilenameFrame(indexFrameDepth);
+    frameDepth.write(filenameDepth, filenameReportDepth);
 
     g_dFrames++;
 
-    timeCurrent = std::chrono::high_resolution_clock::now();
-    timeStamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
-
-    frameCount++;
-
-}
-
-uint16_t* getPixelsDepthAcqQVGA() {
-    return pixelsDepthAcqQVGA;
-    //return pixelsDepthAcqQVGASnapshot;
-}
-uint16_t* getPixelsDepthAcqVGA() {
-    return pixelsDepthAcqVGA;
-    //return pixelsDepthAcqVGASnapshot;
-}
-uint8_t* getPixelsColorsAcq() {
-    return pixelsColorAcq;
-}
-uint16_t* getPixelsDepthSync() {
-    //return pixelsDepthSync;
-    return pixelsDepthSyncSnapshot;
-}
-uint8_t* getPixelsColorSyncVGA() {
-    //return pixelsColorSyncVGA;
-    return pixelsColorSyncVGASnapshot;
-}
-uint8_t* getPixelsColorSyncQVGA() {
-    //return pixelsColorSyncQVGA;
-    return pixelsColorSyncQVGASnapshot;
-}
-uint16_t* getPixelsConfidenceQVGA() {
-    return pixelsConfidenceAcqQVGA;
-}
-
-int getTimeStamp() {
-    return timeStamp;
-}
-
-int getFrameCount() {
-    return frameCount;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -507,11 +454,9 @@ void capture()
 
 int main(int argc, char* argv[]) {
     int flagColorFormat = FORMAT_VGA_ID;
-    filenameReportColor = FrameColor::formatFilenameReport();
-    FILE* pFileReport;
-    pFileReport = fopen(filenameReportColor.c_str(), "w");
-    fprintf(pFileReport, "color frame, timestamp, corresponding depth frame\n");
-    fclose(pFileReport);
+
+    widthDepth = FORMAT_QVGA_WIDTH;
+    heightDepth = FORMAT_QVGA_HEIGHT;
 
     switch (flagColorFormat) {
         case FORMAT_VGA_ID:
@@ -543,18 +488,22 @@ int main(int argc, char* argv[]) {
             exit(EXIT_FAILURE);
     }
 
-    hasData = (bool*) malloc(nPixelsColorAcq*sizeof(bool));
-    // Snapshot data
-    pixelsDepthAcqVGASnapshot    = (uint16_t*) malloc(FORMAT_VGA_PIXELS*sizeof(uint16_t));
-    pixelsColorSyncVGASnapshot   = (uint8_t*) malloc(3*FORMAT_VGA_PIXELS*sizeof(uint8_t));
-    pixelsDepthAcqQVGASnapshot   = (uint16_t*) malloc(FORMAT_QVGA_PIXELS*sizeof(uint16_t));
-    pixelsColorSyncQVGASnapshot  = (uint8_t*) malloc(3*FORMAT_QVGA_PIXELS*sizeof(uint8_t));
-    pixelsColorAcqSnapshot       = (uint8_t*) malloc(3*nPixelsColorAcq*sizeof(uint8_t));
-    pixelsDepthSyncSnapshot      = (uint16_t*) malloc(nPixelsColorAcq*sizeof(uint16_t));
-    pixelsConfidenceAcqQVGASnapshot = (uint16_t*) malloc(FORMAT_QVGA_PIXELS*sizeof(uint16_t));
+    filenameReportColor = FrameColor::formatFilenameReport();
+    FILE* pFileReportColor;
+    pFileReportColor = fopen(filenameReportColor.c_str(), "w");
+    fprintf(pFileReportColor, "color frame, timestamp, corresponding depth frame, %d, %d\n",
+            widthColor, heightColor);
+    fclose(pFileReportColor);
+
+    filenameReportDepth = FrameDepth::formatFilenameReport();
+    FILE* pFileReportDepth;
+    pFileReportDepth = fopen(filenameReportDepth.c_str(), "w");
+    fprintf(pFileReportDepth, "depth frame, timestamp, %d, %d\n",
+            widthDepth, heightDepth);
+    fclose(pFileReportDepth);
 
 
-    //boost::thread capture_thread(capture);
+
     capture();
     printf("Starting capture thread\n");
 }

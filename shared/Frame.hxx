@@ -62,6 +62,24 @@ class FrameColor: public Frame {
         static string formatFilenameReport();
 };
 
+class FrameDepth: public Frame {
+    protected:
+        uint16_t* m_depth;
+        uint16_t* m_confidence;
+        float* m_uv;
+
+    public:
+        FrameDepth(int width, int height);
+
+        void importDepthMap(DepthNode::NewSampleReceivedData data);
+        void write(string pathFrame, string pathReport);
+
+        static string formatFilenameFrame(int indexFrame);
+        static string formatFilenameReport();
+};
+
+
+
 
 
 

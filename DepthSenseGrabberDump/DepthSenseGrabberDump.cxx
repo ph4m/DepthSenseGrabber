@@ -21,11 +21,14 @@
 #include "../shared/ConversionTools.hxx"
 #include "../shared/AcquisitionParameters.hxx"
 
-#include "FrameColor.hxx"
+#include "Frame.hxx"
+//#include "FrameColor.hxx"
 //#include "FrameDepth.hxx"
 
 using namespace DepthSense;
 using namespace std;
+
+string filenameReportColor;
 
 long seconds, useconds;
 std::chrono::high_resolution_clock::time_point timeStart, timeCurrent;
@@ -146,11 +149,12 @@ void onNewColorSample(ColorNode node, ColorNode::NewSampleReceivedData data)
     frameColor.setTimeStamp(timeStamp);
     int indexFrameColor = g_cFrames;
     int correspFrameDepth = g_dFrames-1;
-    frameColor.setIndexFrameColor(indexFrameColor);
+    frameColor.setIndexFrame(indexFrameColor);
     frameColor.setCorrespFrameDepth(correspFrameDepth);
     frameColor.importColorMap(data);
 
-    string filenameColor = FrameColor::formatFilename(indexFrameColor);
+    string filenameColor = FrameColor::formatFilenameFrame(indexFrameColor);
+    frameColor.write(filenameColor, filenameReportColor);
     //cout << filenameColor << endl;
 
     g_cFrames++;
@@ -503,6 +507,11 @@ void capture()
 
 int main(int argc, char* argv[]) {
     int flagColorFormat = FORMAT_VGA_ID;
+    filenameReportColor = FrameColor::formatFilenameReport();
+    FILE* pFileReport;
+    pFileReport = fopen(filenameReportColor.c_str(), "w");
+    fprintf(pFileReport, "color frame, timestamp, corresponding depth frame\n");
+    fclose(pFileReport);
 
     switch (flagColorFormat) {
         case FORMAT_VGA_ID:

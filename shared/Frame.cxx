@@ -17,29 +17,35 @@
 
 #include "AcquisitionParameters.hxx"
 
-#include "FrameColor.hxx"
+#include "Frame.hxx"
 
 using namespace DepthSense;
 using namespace std;
 
-FrameColor::FrameColor(int width, int height) {
+Frame::Frame(int width, int height) {
     setWidth(width);
     setHeight(height);
+}
+
+void Frame::setWidth(int width) {
+    m_width = width;
+}
+void Frame::setHeight(int height) {
+    m_height = height;
+}
+void Frame::setTimeStamp(int timeStamp) {
+    m_timeStamp = timeStamp;
+}
+void Frame::setIndexFrame(int indexFrame) {
+    m_indexFrame = indexFrame;
+}
+
+FrameColor::FrameColor(int width, int height): Frame(width, height) {
     m_rgb = new uint8_t[3*width*height];
 }
 
-void FrameColor::setWidth(int width) {
-    m_width = width;
-}
-void FrameColor::setHeight(int height) {
-    m_height = height;
-}
-void FrameColor::setTimeStamp(int timeStamp) {
-    m_timeStamp = timeStamp;
-}
-void FrameColor::setIndexFrameColor(int indexFrameColor) {
-    m_indexFrameColor = indexFrameColor;
-}
+
+
 void FrameColor::setCorrespFrameDepth(int correspFrameDepth) {
     m_correspFrameDepth = correspFrameDepth;
 }
@@ -61,13 +67,13 @@ void FrameColor::write(string pathFrame, string pathReport) {
     FILE* pFileReport;
     pFileReport = fopen(pathReport.c_str(), "a");
     fprintf(pFileReport, "%d, %d, %d\n",
-            m_indexFrameColor, m_timeStamp, m_correspFrameDepth);
+            m_indexFrame, m_timeStamp, m_correspFrameDepth);
     fclose(pFileReport);
 }
 
-string FrameColor::formatFilenameFrame(int indexFrameColor) {
+string FrameColor::formatFilenameFrame(int indexFrame) {
     char buff[50];
-    snprintf(buff, sizeof(buff), "color_%05d.dat", indexFrameColor);
+    snprintf(buff, sizeof(buff), "color_%05d.dat", indexFrame);
     string filename = buff;
     return filename;
 }

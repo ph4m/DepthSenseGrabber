@@ -11,8 +11,6 @@ add_executable (DepthSenseGrabberDump
 	../shared/AcquisitionParameters.hxx
     ../shared/Frame.cxx
 	../shared/Frame.hxx
-    #../shared/FrameColor.cxx
-	#../shared/FrameColor.hxx
 )
 
 target_link_libraries (DepthSenseGrabberDump ${DEPTHSENSE_LIBRARIES} ${Boost_LIBRARIES})

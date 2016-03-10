@@ -53,14 +53,21 @@ void FrameColor::importColorMap(ColorNode::NewSampleReceivedData data) {
     }
 }
 
-//void FrameColor::write(string pathFrame, string pathReport) {
-//    FILE* pFile;
-//    pFile = fopen(pathFrame.c_str(), "wb");
-//    fwrite(m_rgb, sizeof(uint8_t), m_width*m_height, pFile);
-//    fclose(pFile);
-//    FILE* pFileReport;
-//    pFileReport = fopen(pathReport.c_str(), "a");
-//    fprintf(pFileReport, "%d, %d, %d",
-//            m_indexFrameColor, m_timeStamp, m_correspFrameDepth);
-//    fclose(pFileReport);
-//}
+void FrameColor::write(string pathFrame, string pathReport) {
+    FILE* pFile;
+    pFile = fopen(pathFrame.c_str(), "wb");
+    fwrite(m_rgb, sizeof(uint8_t), m_width*m_height, pFile);
+    fclose(pFile);
+    FILE* pFileReport;
+    pFileReport = fopen(pathReport.c_str(), "a");
+    fprintf(pFileReport, "%d, %d, %d",
+            m_indexFrameColor, m_timeStamp, m_correspFrameDepth);
+    fclose(pFileReport);
+}
+
+string FrameColor::formatFilename(int indexFrameColor) {
+    char buff[50];
+    snprintf(buff, sizeof(buff), "color_%05d.dat", indexFrameColor);
+    string filename = buff;
+    return filename;
+}

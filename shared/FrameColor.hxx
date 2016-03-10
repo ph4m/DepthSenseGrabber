@@ -47,6 +47,9 @@ class FrameColor {
         int getCorrespFrameDepth() { return m_correspFrameDepth; }
 
         void importColorMap(ColorNode::NewSampleReceivedData data);
-        //void write(string pathFrame, string pathReport);
+        void write(string pathFrame, string pathReport);
 
+        static string formatFilename(int indexFrameColor);
+
+};
 #endif

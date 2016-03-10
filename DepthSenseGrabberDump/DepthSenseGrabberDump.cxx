@@ -144,9 +144,14 @@ void onNewColorSample(ColorNode node, ColorNode::NewSampleReceivedData data)
     timeCurrent = std::chrono::high_resolution_clock::now();
     timeStamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
     frameColor.setTimeStamp(timeStamp);
-    frameColor.setIndexFrameColor(g_cFrames);
-    frameColor.setCorrespFrameDepth(g_dFrames-1);
+    int indexFrameColor = g_cFrames;
+    int correspFrameDepth = g_dFrames-1;
+    frameColor.setIndexFrameColor(indexFrameColor);
+    frameColor.setCorrespFrameDepth(correspFrameDepth);
     frameColor.importColorMap(data);
+
+    string filenameColor = FrameColor::formatFilename(indexFrameColor);
+    //cout << filenameColor << endl;
 
     g_cFrames++;
 

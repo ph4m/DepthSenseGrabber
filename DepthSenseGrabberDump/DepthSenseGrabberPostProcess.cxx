@@ -12,16 +12,109 @@
 #include <vector>
 #include <exception>
 
-#include "DepthSenseGrabberPNM.hxx"
+#include "DepthSenseGrabberPostProcess.hxx"
 #include "../DepthSenseGrabberCore/DepthSenseGrabberCore.hxx"
 #include "../shared/ConversionTools.hxx"
 #include "../shared/AcquisitionParameters.hxx"
 
 #include "Frame.hxx"
 
+
+
+int framerateDepth = 60;
+int framerateColor = 30;
+
+
+/**********************************************************
+ * Filter out inaccurate measurements with confidence map *
+ * Fix finger doubling in color map                       *
+ **********************************************************/
+
+#define DEPTHSENSEGRABBER_USE_CONFIDENCE_MAP
+#if defined(DEPTHSENSEGRABBER_USE_CONFIDENCE_MAP)
+const uint16_t confidenceThreshold = 100;
+
+#endif // DEPTHSENSEGRABBER_USE_CONFIDENCE_MAP
+
+
+/*******************************************************
+ * Spatial smoothing with Gaussian blur                *
+ * Could be improved by only filtering up to the edges *
+ *******************************************************/
+
+#define DEPTHSENSEGRABBER_SMOOTH_SPATIAL
+
+int kernel_length = 3;
+
+/*******************************************
+ * Temporal smoothing with low-pass filter *
+ * http://www.exstrom.com/journal/sigproc/ *
+ *******************************************/
+
+#define DEPTHSENSEGRABBER_SMOOTH_TEMPORAL
+
+uint16_t maxDeltaDepth = 50;
+
+const int filterOrder = 2;
+const int filterSize = filterOrder/2;
+const int filterSamplingFreq = framerateDepth;
+const int filterCornerFreq = 15;
+
+int widthDepth, heightDepth;
+int widthColor, heightColor, nPixelsColorAcq;
+
+
+float* filterA;
+float* filterD1;
+float* filterD2;
+
+float* w0All;
+float* w1All;
+float* w2All;
+
+void initFilterWeights(float* A, float* d1, float* d2, int n, int s, int f) {
+    float a = tan(M_PI*f/s);
+    float a2 = a*a;
+    for (int i = 0; i < n; i++) {
+        float r = sin(M_PI*(2.0*i+1.0)/(4.0*n));
+        float t = a2 + 2.0*a*r + 1.0;
+        A[i] = a2/t;
+        d1[i] = 2.0*(1-a2)/t;
+        d2[i] = -(a2 - 2.0*a*r + 1.0)/t;
+    }
+}
+
+uint16_t filterNew(uint16_t sample, float* w0, float* w1, float* w2, int n, float* A, float* d1, float* d2) {
+    float x = static_cast<float>(sample);
+    for(int i=0; i < n; ++i){
+        w0[i] = d1[i]*w1[i] + d2[i]*w2[i] + x;
+        x = A[i]*(w0[i] + 2.0*w1[i] + w2[i]);
+        w2[i] = w1[i];
+        w1[i] = w0[i];
+    }
+    uint16_t filteredVal = static_cast<uint16_t>(x);
+    bool isInRange = abs(filteredVal - sample) < maxDeltaDepth;
+    if (not isInRange) return sample;
+    return static_cast<uint16_t>(x);
+}
+
+
+
 int main(int argc, char* argv[])
 {
+    widthDepth = FORMAT_QVGA_WIDTH;
+    heightDepth = FORMAT_QVGA_HEIGHT;
 
+    filterA = new float[filterSize];
+    filterD1 = new float[filterSize];
+    filterD2 = new float[filterSize];
+
+    w0All = new float[heightDepth*widthDepth*filterSize];
+    w1All = new float[heightDepth*widthDepth*filterSize];
+    w2All = new float[heightDepth*widthDepth*filterSize];
+
+
+    /*
     bool interpolateDepthFlag = 0;
 
     bool saveColorAcqFlag   = 1;
@@ -124,6 +217,7 @@ int main(int argc, char* argv[])
             }
         }
     }
+    */
 
 
     return 0;

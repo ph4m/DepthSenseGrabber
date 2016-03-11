@@ -54,6 +54,7 @@ class Frame {
 
 class FrameColor: public Frame {
     protected:
+        static const string m_prefix;
         uint8_t* m_rgb; // RGB format
 
     public:
@@ -68,6 +69,7 @@ class FrameColor: public Frame {
 
 class FrameDepth: public Frame {
     protected:
+        static const string m_prefix;
         uint16_t* m_depth;
         uint16_t* m_confidence;
         float* m_uv;

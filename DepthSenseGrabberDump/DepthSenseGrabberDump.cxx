@@ -40,8 +40,8 @@ bool usingUSB30Flag = true; // if the camera is plugged on a USB 3.0 port
 int waitSecondsBeforeGrab = 1;
 //const int16_t confidenceThreshold = 150;
 
-int32_t  frameRateDepth = 60;
-int32_t  frameRateColor = 30;
+int framerateDepth = 60;
+int framerateColor = 30;
 
 // Acquired data
 uint16_t pixelsConfidenceAcqQVGA[FORMAT_QVGA_PIXELS];
@@ -241,10 +241,10 @@ void configureAudioNode()
 void configureDepthNode()
 {
     g_dnode.newSampleReceivedEvent().connect(&onNewDepthSample);
-    DepthNode::Configuration configRef(frameFormatDepth, frameRateDepth, DepthNode::CAMERA_MODE_CLOSE_MODE, true);
+    DepthNode::Configuration configRef(frameFormatDepth, framerateDepth, DepthNode::CAMERA_MODE_CLOSE_MODE, true);
     DepthNode::Configuration config = g_dnode.getConfiguration();
     config.frameFormat = frameFormatDepth;
-    config.framerate = frameRateDepth;
+    config.framerate = framerateDepth;
     config.mode = DepthNode::CAMERA_MODE_CLOSE_MODE;
     config.saturation = true;
 
@@ -298,7 +298,7 @@ void configureColorNode()
     config.frameFormat = frameFormatColor;
     config.compression = COMPRESSION_TYPE_MJPEG; // can also be COMPRESSION_TYPE_YUY2
     config.powerLineFrequency = POWER_LINE_FREQUENCY_50HZ;
-    config.framerate = frameRateColor;
+    config.framerate = framerateColor;
     g_cnode.setEnableColorMap(true);
 
 
@@ -502,7 +502,7 @@ int main(int argc, char* argv[]) {
     filenameReportDepth = FrameDepth::formatFilenameReport();
     FILE* pFileReportDepth;
     pFileReportDepth = fopen(filenameReportDepth.c_str(), "w");
-    fprintf(pFileReportDepth, "depth frame, timestamp, %d, %d\n",
+    fprintf(pFileReportDepth, "depth frame, timestamp, corresponding color frame, %d, %d\n",
             widthDepth, heightDepth);
     fclose(pFileReportDepth);
 

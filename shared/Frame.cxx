@@ -73,6 +73,7 @@ void Frame::updateReport(string pathReport) {
 FrameColor::FrameColor(int width, int height): Frame(width, height) {
     m_rgb = new uint8_t[3*width*height];
 }
+const string FrameColor::m_prefix = "color";
 
 void FrameColor::importColorMap(ColorNode::NewSampleReceivedData data) {
     for (int currentPixelInd = 0; currentPixelInd < m_width*m_height; currentPixelInd++)
@@ -93,15 +94,11 @@ void FrameColor::writeFrame(string pathFrame) {
 }
 
 string FrameColor::formatFilenameFrame(int indexFrame) {
-    string prefix = "color";
-    string filename = Frame::formatFilenameFrame(indexFrame, prefix);
-    return filename;
+    return Frame::formatFilenameFrame(indexFrame, m_prefix);
 }
 
 string FrameColor::formatFilenameReport() {
-    string prefix = "color";
-    string filename = Frame::formatFilenameReport(prefix);
-    return filename;
+    return Frame::formatFilenameReport(m_prefix);
 }
 
 
@@ -114,6 +111,7 @@ FrameDepth::FrameDepth(int width, int height): Frame(width, height) {
     m_confidence = new uint16_t[width*height];
     m_uv = new float[2*width*height];
 }
+const string FrameDepth::m_prefix = "depth";
 
 
 
@@ -142,15 +140,11 @@ void FrameDepth::writeFrame(string pathFrame) {
 
 
 string FrameDepth::formatFilenameFrame(int indexFrame) {
-    string prefix = "depth";
-    string filename = Frame::formatFilenameFrame(indexFrame, prefix);
-    return filename;
+    return Frame::formatFilenameFrame(indexFrame, m_prefix);
 }
 
 string FrameDepth::formatFilenameReport() {
-    string prefix = "depth";
-    string filename = Frame::formatFilenameReport(prefix);
-    return filename;
+    return Frame::formatFilenameReport(m_prefix);
 }
 
 

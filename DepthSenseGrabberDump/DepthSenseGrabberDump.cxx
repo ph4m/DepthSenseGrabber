@@ -149,11 +149,12 @@ void onNewColorSample(ColorNode node, ColorNode::NewSampleReceivedData data)
     int indexFrameColor = g_cFrames;
     int correspFrameDepth = g_dFrames-1;
     frameColor.setIndexFrame(indexFrameColor);
-    frameColor.setCorrespFrameDepth(correspFrameDepth);
+    frameColor.setCorrespFrame(correspFrameDepth);
     frameColor.importColorMap(data);
 
     string filenameColor = FrameColor::formatFilenameFrame(indexFrameColor);
-    frameColor.write(filenameColor, filenameReportColor);
+    frameColor.writeFrame(filenameColor);
+    frameColor.updateReport(filenameReportColor);
     //cout << filenameColor << endl;
 
     g_cFrames++;
@@ -181,11 +182,14 @@ void onNewDepthSample(DepthNode node, DepthNode::NewSampleReceivedData data)
     timeStamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
     frameDepth.setTimeStamp(timeStamp);
     int indexFrameDepth = g_dFrames;
+    int correspFrameColor = g_cFrames;
     frameDepth.setIndexFrame(indexFrameDepth);
+    frameDepth.setCorrespFrame(correspFrameColor);
     frameDepth.importDepthMap(data);
 
     string filenameDepth = FrameDepth::formatFilenameFrame(indexFrameDepth);
-    frameDepth.write(filenameDepth, filenameReportDepth);
+    frameDepth.writeFrame(filenameDepth);
+    frameDepth.updateReport(filenameReportDepth);
 
     g_dFrames++;
 

@@ -28,6 +28,7 @@ class Frame {
         int m_height;
         int m_timeStamp;
         int m_indexFrame;
+        int m_correspFrame;
 
     public:
         Frame(int width, int height);
@@ -36,27 +37,30 @@ class Frame {
         void setHeight(int height);
         void setTimeStamp(int timeStamp);
         void setIndexFrame(int indexFrame);
+        void setCorrespFrame(int correspFrame);
 
         int getWidth() { return m_width; }
         int getHeight() { return m_height; }
         int getTimeStamp() { return m_timeStamp; }
         int getIndexFrame() { return m_indexFrame; }
+        int getCorrespFrame() { return m_correspFrame; }
 
+        void updateReport(string pathReport);
+
+        static string formatFilenameFrame(int indexFrame, string prefix);
+        static string formatFilenameReport(string prefix);
 
 };
 
 class FrameColor: public Frame {
     protected:
-        int m_correspFrameDepth;
         uint8_t* m_rgb; // RGB format
 
     public:
         FrameColor(int width, int height);
 
-        void setCorrespFrameDepth(int correspFrameDepth);
-        int getCorrespFrameDepth() { return m_correspFrameDepth; }
         void importColorMap(ColorNode::NewSampleReceivedData data);
-        void write(string pathFrame, string pathReport);
+        void writeFrame(string pathFrame);
 
         static string formatFilenameFrame(int indexFrame);
         static string formatFilenameReport();
@@ -72,7 +76,7 @@ class FrameDepth: public Frame {
         FrameDepth(int width, int height);
 
         void importDepthMap(DepthNode::NewSampleReceivedData data);
-        void write(string pathFrame, string pathReport);
+        void writeFrame(string pathFrame);
 
         static string formatFilenameFrame(int indexFrame);
         static string formatFilenameReport();

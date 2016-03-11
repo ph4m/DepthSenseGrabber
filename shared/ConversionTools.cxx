@@ -11,6 +11,7 @@
 #include <exception>
 
 #include <DepthSense.hxx>
+#include "ConversionTools.hxx"
 
 using namespace DepthSense;
 using namespace std;
@@ -86,8 +87,15 @@ int formatResY(int resType) {
 
 void saveColorFramePNM(char* fileName, uint8_t* pixels, int width, int height, int timeStamp)
 {
+    // Deprecated
+    string fileNameStr = fileName;
+    saveColorFramePNM(fileNameStr, pixels, width, height, timeStamp);
+}
+
+void saveColorFramePNM(string fileName, uint8_t* pixels, int width, int height, int timeStamp)
+{
     FILE *pFile=0;
-    pFile = fopen(fileName,"wb");
+    pFile = fopen(fileName.c_str(),"wb");
 
     if (pFile!=0)
     {
@@ -131,11 +139,17 @@ int swapDepthEndianness( uint16_t* pixels, int width, int height)
  return 1;
 }
 
-
 void saveDepthFramePNM(char* fileName, uint16_t* pixels, int width, int height, int timeStamp)
 {
+    // Deprecated
+    string fileNameStr = fileName;
+    saveDepthFramePNM(fileNameStr, pixels, width, height, timeStamp);
+}
+
+void saveDepthFramePNM(string fileName, uint16_t* pixels, int width, int height, int timeStamp)
+{
     FILE *pFile=0;
-    pFile = fopen(fileName,"wb");
+    pFile = fopen(fileName.c_str(),"wb");
 
     if (pFile!=0)
     {
@@ -469,3 +483,4 @@ void rescaleMap(DepthSense::Pointer<DepthSense::UV> src, UV* dst, int srcWidth, 
         }
     }
 }
+ 

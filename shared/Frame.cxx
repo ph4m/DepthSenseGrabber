@@ -12,8 +12,9 @@
 
 #include <vector>
 #include <exception>
-
-#include "DepthSense.hxx"
+#include <fstream>
+#include <sstream>
+#include <DepthSense.hxx>
 
 #include "AcquisitionParameters.hxx"
 
@@ -33,8 +34,8 @@ void Frame::setWidth(int width) {
 void Frame::setHeight(int height) {
     m_height = height;
 }
-void Frame::setTimeStamp(int timeStamp) {
-    m_timeStamp = timeStamp;
+void Frame::setTimestamp(int timestamp) {
+    m_timestamp = timestamp;
 }
 void Frame::setIndexFrame(int indexFrame) {
     m_indexFrame = indexFrame;
@@ -44,14 +45,22 @@ void Frame::setCorrespFrame(int correspFrame) {
 }
 
 string Frame::formatFilenameFrame(int indexFrame, string prefix) {
-    char buff[50];
+    char buff[100];
     snprintf(buff, sizeof(buff), "%s_%05d.dat", prefix.c_str(), indexFrame);
     string filename = buff;
     return filename;
 }
 
+string Frame::formatFilenamePNM(int indexFrame, string prefix) {
+    char buff[100];
+    snprintf(buff, sizeof(buff), "%s_%05d.pnm", prefix.c_str(), indexFrame);
+    string filename = buff;
+    return filename;
+}
+
+
 string Frame::formatFilenameReport(string prefix) {
-    char buff[50];
+    char buff[100];
     snprintf(buff, sizeof(buff), "%s_report.txt", prefix.c_str());
     string filename = buff;
     return filename;
@@ -60,9 +69,34 @@ string Frame::formatFilenameReport(string prefix) {
 void Frame::updateReport(string pathReport) {
     FILE* pFileReport;
     pFileReport = fopen(pathReport.c_str(), "a");
-    fprintf(pFileReport, "%d, %d, %d\n",
-            m_indexFrame, m_timeStamp, m_correspFrame);
+    fprintf(pFileReport, "%d %d %d\n",
+            m_indexFrame, m_timestamp, m_correspFrame);
     fclose(pFileReport);
+}
+
+void Frame::importReport(string pathReport,
+                         Report* p_report) {
+    ifstream fileStream(pathReport.c_str());
+    if (!fileStream.is_open()) {
+        cout << "Could not open report: " << pathReport<< endl;
+        exit(EXIT_FAILURE);
+    }
+    string line;
+    while (getline(fileStream, line)) {
+        istringstream iss(line);
+        int indexFrame, timestamp, correspFrame;
+        if (!(iss >> indexFrame >> timestamp >> correspFrame)) {
+            cout << "Skipping line: " << iss.str() << endl;
+        }
+        else {
+            FrameCorrespondence frameCorrespondence;
+            frameCorrespondence.indexFrame = indexFrame;
+            frameCorrespondence.timestamp = timestamp;
+            frameCorrespondence.correspFrame = correspFrame;
+            p_report->push_back(frameCorrespondence);
+        }
+    }
+
 }
 
 
@@ -73,7 +107,29 @@ void Frame::updateReport(string pathReport) {
 FrameColor::FrameColor(int width, int height): Frame(width, height) {
     m_rgb = new uint8_t[3*width*height];
 }
+
 const string FrameColor::m_prefix = "color";
+
+FrameColor::FrameColor(string pathFrame): Frame(0, 0) {
+    ifstream fileStream(pathFrame.c_str(), ios::binary);
+    if (!fileStream.is_open()) {
+        cout << "Could not open frame: " << pathFrame.c_str() << endl;
+        exit(EXIT_FAILURE);
+    }
+    int width, height;
+    fileStream.read(reinterpret_cast < char * > (&width), sizeof(int)/sizeof(char));
+    fileStream.read(reinterpret_cast < char * > (&height), sizeof(int)/sizeof(char));
+    setWidth(width);
+    setHeight(height);
+    int nPixels = width*height;
+    m_rgb = new uint8_t[3*nPixels];
+    fileStream.read(reinterpret_cast < char * > (m_rgb), 3*width*height*sizeof(uint8_t)/sizeof(char));
+}
+
+FrameColor::~FrameColor() {
+    delete [] m_rgb;
+}
+
 
 void FrameColor::importColorMap(ColorNode::NewSampleReceivedData data) {
     for (int currentPixelInd = 0; currentPixelInd < m_width*m_height; currentPixelInd++)
@@ -87,18 +143,20 @@ void FrameColor::importColorMap(ColorNode::NewSampleReceivedData data) {
 void FrameColor::writeFrame(string pathFrame) {
     FILE* pFile;
     pFile = fopen(pathFrame.c_str(), "wb");
+    fwrite(&m_width, sizeof(int), 1, pFile);
+    fwrite(&m_height, sizeof(int), 1, pFile);
     int nPixels = m_width*m_height;
-    fwrite(&nPixels, sizeof(int), 1, pFile);
     fwrite(m_rgb, sizeof(uint8_t), 3*nPixels, pFile);
     fclose(pFile);
 }
 
+
 string FrameColor::formatFilenameFrame(int indexFrame) {
-    return Frame::formatFilenameFrame(indexFrame, m_prefix);
+    return Frame::formatFilenameFrame(indexFrame, getPrefix());
 }
 
 string FrameColor::formatFilenameReport() {
-    return Frame::formatFilenameReport(m_prefix);
+    return Frame::formatFilenameReport(getPrefix());
 }
 
 
@@ -112,6 +170,32 @@ FrameDepth::FrameDepth(int width, int height): Frame(width, height) {
     m_uv = new float[2*width*height];
 }
 const string FrameDepth::m_prefix = "depth";
+
+FrameDepth::FrameDepth(string pathFrame): Frame(0, 0) {
+    ifstream fileStream(pathFrame.c_str(), ios::binary);
+    if (!fileStream.is_open()) {
+        cout << "Could not open frame: " << pathFrame.c_str() << endl;
+        exit(EXIT_FAILURE);
+    }
+    int width, height;
+    fileStream.read(reinterpret_cast < char * > (&width), sizeof(int)/sizeof(char));
+    fileStream.read(reinterpret_cast < char * > (&height), sizeof(int)/sizeof(char));
+    setWidth(width);
+    setHeight(height);
+    int nPixels = width*height;
+    m_depth = new uint16_t[nPixels];
+    m_confidence = new uint16_t[width*height];
+    m_uv = new float[2*width*height];
+    fileStream.read(reinterpret_cast < char * > (m_depth), nPixels*sizeof(uint16_t)/sizeof(char));
+    fileStream.read(reinterpret_cast < char * > (m_confidence), nPixels*sizeof(uint16_t)/sizeof(char));
+    fileStream.read(reinterpret_cast < char * > (m_uv), 2*nPixels*sizeof(float)/sizeof(char));
+}
+
+FrameDepth::~FrameDepth() {
+    delete [] m_depth;
+    delete [] m_confidence;
+    delete [] m_uv;
+}
 
 
 
@@ -130,8 +214,9 @@ void FrameDepth::importDepthMap(DepthNode::NewSampleReceivedData data) {
 void FrameDepth::writeFrame(string pathFrame) {
     FILE* pFile;
     pFile = fopen(pathFrame.c_str(), "wb");
+    fwrite(&m_width, sizeof(int), 1, pFile);
+    fwrite(&m_height, sizeof(int), 1, pFile);
     int nPixels = m_width*m_height;
-    fwrite(&nPixels, sizeof(int), 1, pFile);
     fwrite(m_depth, sizeof(uint16_t), nPixels, pFile);
     fwrite(m_confidence, sizeof(uint16_t), nPixels, pFile);
     fwrite(m_uv, sizeof(float), 2*nPixels, pFile);
@@ -140,11 +225,11 @@ void FrameDepth::writeFrame(string pathFrame) {
 
 
 string FrameDepth::formatFilenameFrame(int indexFrame) {
-    return Frame::formatFilenameFrame(indexFrame, m_prefix);
+    return Frame::formatFilenameFrame(indexFrame, getPrefix());
 }
 
 string FrameDepth::formatFilenameReport() {
-    return Frame::formatFilenameReport(m_prefix);
+    return Frame::formatFilenameReport(getPrefix());
 }
 
 

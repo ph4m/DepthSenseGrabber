@@ -24,5 +24,6 @@ add_executable (DepthSenseGrabberPostProcess
 	../shared/Frame.hxx
 )
 
-target_link_libraries (DepthSenseGrabberPostProcess ${DEPTHSENSE_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries (DepthSenseGrabberPostProcess
+                       ${DEPTHSENSE_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS})
 

@@ -15,7 +15,7 @@
 #include <vector>
 #include <exception>
 
-#include "DepthSense.hxx"
+#include <DepthSense.hxx>
 
 #include "DepthSenseGrabberDump.hxx"
 #include "../shared/ConversionTools.hxx"
@@ -101,8 +101,8 @@ int debugInt;
 UV uvMapAcqQVGA[FORMAT_QVGA_PIXELS];
 UV uvMapVGA[FORMAT_VGA_PIXELS];
 
-double timeStampSeconds;
-int timeStamp;
+double timestampSeconds;
+int timestamp;
 clock_t clockStartGrab;
 
 Context g_context;
@@ -144,18 +144,18 @@ void onNewColorSample(ColorNode node, ColorNode::NewSampleReceivedData data)
     }
     FrameColor frameColor(widthColor, heightColor);
     timeCurrent = std::chrono::high_resolution_clock::now();
-    timeStamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
-    frameColor.setTimeStamp(timeStamp);
+    timestamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
+    frameColor.setTimestamp(timestamp);
     int indexFrameColor = g_cFrames;
     int correspFrameDepth = g_dFrames-1;
     frameColor.setIndexFrame(indexFrameColor);
     frameColor.setCorrespFrame(correspFrameDepth);
     frameColor.importColorMap(data);
 
-    string filenameColor = FrameColor::formatFilenameFrame(indexFrameColor);
-    frameColor.writeFrame(filenameColor);
+    string filenameFrameColor = FrameColor::formatFilenameFrame(indexFrameColor);
+    frameColor.writeFrame(filenameFrameColor);
     frameColor.updateReport(filenameReportColor);
-    //cout << filenameColor << endl;
+    //cout << filenameFrameColor << endl;
 
     g_cFrames++;
 
@@ -179,16 +179,16 @@ void onNewDepthSample(DepthNode node, DepthNode::NewSampleReceivedData data)
 {
     FrameDepth frameDepth(widthDepth, heightDepth);
     timeCurrent = std::chrono::high_resolution_clock::now();
-    timeStamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
-    frameDepth.setTimeStamp(timeStamp);
+    timestamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
+    frameDepth.setTimestamp(timestamp);
     int indexFrameDepth = g_dFrames;
     int correspFrameColor = g_cFrames;
     frameDepth.setIndexFrame(indexFrameDepth);
     frameDepth.setCorrespFrame(correspFrameColor);
     frameDepth.importDepthMap(data);
 
-    string filenameDepth = FrameDepth::formatFilenameFrame(indexFrameDepth);
-    frameDepth.writeFrame(filenameDepth);
+    string filenameFrameDepth = FrameDepth::formatFilenameFrame(indexFrameDepth);
+    frameDepth.writeFrame(filenameFrameDepth);
     frameDepth.updateReport(filenameReportDepth);
 
     g_dFrames++;
@@ -495,14 +495,14 @@ int main(int argc, char* argv[]) {
     filenameReportColor = FrameColor::formatFilenameReport();
     FILE* pFileReportColor;
     pFileReportColor = fopen(filenameReportColor.c_str(), "w");
-    fprintf(pFileReportColor, "color frame, timestamp, corresponding depth frame, %d, %d\n",
+    fprintf(pFileReportColor, "#color frame, timestamp, corresponding depth frame, %d, %d\n",
             widthColor, heightColor);
     fclose(pFileReportColor);
 
     filenameReportDepth = FrameDepth::formatFilenameReport();
     FILE* pFileReportDepth;
     pFileReportDepth = fopen(filenameReportDepth.c_str(), "w");
-    fprintf(pFileReportDepth, "depth frame, timestamp, corresponding color frame, %d, %d\n",
+    fprintf(pFileReportDepth, "#depth frame, timestamp, corresponding color frame, %d, %d\n",
             widthDepth, heightDepth);
     fclose(pFileReportDepth);
 

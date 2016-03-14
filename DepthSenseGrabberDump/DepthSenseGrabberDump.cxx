@@ -5,6 +5,7 @@
 #include <windows.h>
 #endif
 
+#include <signal.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -22,31 +23,29 @@
 #include "../shared/AcquisitionParameters.hxx"
 
 #include "Frame.hxx"
-//#include "FrameColor.hxx"
-//#include "FrameDepth.hxx"
 
 using namespace DepthSense;
 using namespace std;
+
+#define DEPTHSENSEGRABBER_DUMP_DELAY
+#if defined(DEPTHSENSEGRABBER_DUMP_DELAY)
+vector<FrameColor*> vFrameColor;
+vector<FrameDepth*> vFrameDepth;
+#endif
 
 string filenameReportColor, filenameReportDepth;
 
 long seconds, useconds;
 std::chrono::high_resolution_clock::time_point timeStart, timeCurrent;
 
-//bool flagTakingSnapshot = 0;
-
 bool usingUSB30Flag = true; // if the camera is plugged on a USB 3.0 port
 
 int waitSecondsBeforeGrab = 1;
-//const int16_t confidenceThreshold = 150;
 
 int framerateDepth = 60;
 int framerateColor = 30;
 
 // Acquired data
-uint16_t pixelsConfidenceAcqQVGA[FORMAT_QVGA_PIXELS];
-uint16_t pixelsDepthAcqQVGA[FORMAT_QVGA_PIXELS];
-uint8_t pixelsColorAcqVGA[3*FORMAT_VGA_PIXELS];
 uint8_t pixelsColorAcqWXGA[3*FORMAT_WXGA_PIXELS];
 uint8_t pixelsColorAcqNHD[3*FORMAT_NHD_PIXELS];
 
@@ -64,7 +63,6 @@ uint16_t pixelsDepthAcqVGA[FORMAT_VGA_PIXELS];
 
 FrameFormat frameFormatDepth = FRAME_FORMAT_QVGA; // Depth QVGA
 const int nPixelsDepthAcq = FORMAT_QVGA_PIXELS;
-uint16_t* pixelsDepthAcq = pixelsDepthAcqQVGA;
 
 
 int deltaPixelsIndAround[8] = {-641,-640,-639,-1,1,639,640,641};
@@ -76,7 +74,6 @@ FrameFormat frameFormatColor;
 int widthDepth, heightDepth;
 int widthColor, heightColor, nPixelsColorAcq;
 uint8_t* pixelsColorAcq;
-uint16_t* pixelsDepthSync;
 
 // Snapshot data
 uint16_t* pixelsDepthAcqVGASnapshot;
@@ -130,32 +127,35 @@ void onNewAudioSample(AudioNode node, AudioNode::NewSampleReceivedData data)
 // New color sample event handler
 /* Comments from SoftKinetic
 
-From data you can get
+   From data you can get
 
-::DepthSense::Pointer< uint8_t > colorMap
-The color map. If captureConfiguration::compression is
-DepthSense::COMPRESSION_TYPE_MJPEG, the output format is BGR, otherwise
-the output format is YUY2.
- */
+   ::DepthSense::Pointer< uint8_t > colorMap
+   The color map. If captureConfiguration::compression is
+   DepthSense::COMPRESSION_TYPE_MJPEG, the output format is BGR, otherwise
+   the output format is YUY2.
+   */
 void onNewColorSample(ColorNode node, ColorNode::NewSampleReceivedData data)
 {
     if (g_dFrames < 1) {
         return ;
     }
-    FrameColor frameColor(widthColor, heightColor);
-    timeCurrent = std::chrono::high_resolution_clock::now();
-    timestamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
-    frameColor.setTimestamp(timestamp);
     int indexFrameColor = g_cFrames;
     int correspFrameDepth = g_dFrames-1;
-    frameColor.setIndexFrame(indexFrameColor);
-    frameColor.setCorrespFrame(correspFrameDepth);
-    frameColor.importColorMap(data);
+    FrameColor* pFrameColor = new FrameColor(widthColor, heightColor);
+    timeCurrent = std::chrono::high_resolution_clock::now();
+    timestamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
+    pFrameColor->setTimestamp(timestamp);
+    pFrameColor->setIndexFrame(indexFrameColor);
+    pFrameColor->setCorrespFrame(correspFrameDepth);
+    pFrameColor->importColorMap(data);
 
+#if defined(DEPTHSENSEGRABBER_DUMP_DELAY)
+    vFrameColor.push_back(pFrameColor);
+#else
     string filenameFrameColor = FrameColor::formatFilenameFrame(indexFrameColor);
-    frameColor.writeFrame(filenameFrameColor);
-    frameColor.updateReport(filenameReportColor);
-    //cout << filenameFrameColor << endl;
+    pFrameColor->writeFrame(filenameFrameColor);
+    pFrameColor->updateReport(filenameReportColor);
+#endif
 
     g_cFrames++;
 
@@ -166,30 +166,35 @@ void onNewColorSample(ColorNode node, ColorNode::NewSampleReceivedData data)
 
 /* From SoftKinetic
 
-::DepthSense::Pointer< int16_t > depthMap
-The depth map in fixed point format. This map represents the cartesian depth of each
-pixel, expressed in millimeters. Valid values lies in the range [0 - 31999]. Saturated
-pixels are given the special value 32002.
- ::DepthSense::Pointer< float > depthMapFloatingPoint
-The depth map in floating point format. This map represents the cartesian depth of
-each pixel, expressed in meters. Saturated pixels are given the special value -2.0.
-*/
+   ::DepthSense::Pointer< int16_t > depthMap
+   The depth map in fixed point format. This map represents the cartesian depth of each
+   pixel, expressed in millimeters. Valid values lies in the range [0 - 31999]. Saturated
+   pixels are given the special value 32002.
+    ::DepthSense::Pointer< float > depthMapFloatingPoint
+   The depth map in floating point format. This map represents the cartesian depth of
+   each pixel, expressed in meters. Saturated pixels are given the special value -2.0.
+   */
 
 void onNewDepthSample(DepthNode node, DepthNode::NewSampleReceivedData data)
 {
-    FrameDepth frameDepth(widthDepth, heightDepth);
-    timeCurrent = std::chrono::high_resolution_clock::now();
-    timestamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
-    frameDepth.setTimestamp(timestamp);
     int indexFrameDepth = g_dFrames;
     int correspFrameColor = g_cFrames;
-    frameDepth.setIndexFrame(indexFrameDepth);
-    frameDepth.setCorrespFrame(correspFrameColor);
-    frameDepth.importDepthMap(data);
+    FrameDepth* pFrameDepth = new FrameDepth(widthDepth, heightDepth);
+    timeCurrent = std::chrono::high_resolution_clock::now();
+    timestamp = (int) std::chrono::duration_cast<std::chrono::milliseconds>(timeCurrent - timeStart).count();
+    pFrameDepth->setTimestamp(timestamp);
+    pFrameDepth->setIndexFrame(indexFrameDepth);
+    pFrameDepth->setCorrespFrame(correspFrameColor);
+    pFrameDepth->importDepthMap(data);
 
+
+#if defined(DEPTHSENSEGRABBER_DUMP_DELAY)
+    vFrameDepth.push_back(pFrameDepth);
+#else
     string filenameFrameDepth = FrameDepth::formatFilenameFrame(indexFrameDepth);
-    frameDepth.writeFrame(filenameFrameDepth);
-    frameDepth.updateReport(filenameReportDepth);
+    pFrameDepth->writeFrame(filenameFrameDepth);
+    pFrameDepth->updateReport(filenameReportDepth);
+#endif
 
     g_dFrames++;
 
@@ -370,7 +375,7 @@ void configureNode(Node node)
         printf("Configuring audio node\n");
         g_anode = node.as<AudioNode>();
         configureAudioNode();
-        if (usingUSB30Flag != 1) g_context.registerNode(node); // switch this off to save bandwidth
+        if (!usingUSB30Flag) g_context.registerNode(node); // switch this off to save bandwidth
     }
 }
 
@@ -450,13 +455,73 @@ void capture()
     while (clock() < clockStartGrab);
     printf("Now grabbing!\n");
 
-	timeStart = std::chrono::high_resolution_clock::now();
+    timeStart = std::chrono::high_resolution_clock::now();
 
     g_context.run();
 
 }
 
+void stop_capture(int s)
+{
+    cout << "Stopping capture" << endl;
+    free(hasData);
+    free(pixelsDepthAcqVGASnapshot);
+    free(pixelsDepthAcqQVGASnapshot);
+    free(pixelsColorSyncVGASnapshot);
+    free(pixelsColorSyncQVGASnapshot);
+    free(pixelsColorAcqSnapshot);
+    free(pixelsDepthSyncSnapshot);
+    free(pixelsConfidenceAcqQVGASnapshot);
+
+    g_context.stopNodes();
+
+    if (g_cnode.isSet()) g_context.unregisterNode(g_cnode);
+    if (g_dnode.isSet()) g_context.unregisterNode(g_dnode);
+    //if (g_anode.isSet()) g_context.unregisterNode(g_anode);
+
+    if (g_pProjHelper)
+        delete g_pProjHelper;
+
+
+#if defined(DEPTHSENSEGRABBER_DUMP_DELAY)
+    for (int iFrame = 0; iFrame < vFrameColor.size(); iFrame++) {
+        cout << "Processing color frame " << iFrame << endl;
+        string filenameFrameColor = FrameColor::formatFilenameFrame(iFrame);
+        vFrameColor[iFrame]->writeFrame(filenameFrameColor);
+        vFrameColor[iFrame]->updateReport(filenameReportColor);
+        delete vFrameColor[iFrame];
+    }
+    for (int iFrame = 0; iFrame < vFrameDepth.size(); iFrame++) {
+        cout << "Processing depth frame " << iFrame << endl;
+        string filenameFrameDepth = FrameDepth::formatFilenameFrame(iFrame);
+        vFrameDepth[iFrame]->writeFrame(filenameFrameDepth);
+        vFrameDepth[iFrame]->updateReport(filenameReportDepth);
+        delete vFrameDepth[iFrame];
+    }
+#endif
+
+
+}
+
+#ifdef _MSC_VER
+BOOL WINAPI consoleHandler(DWORD signal) {
+
+    if (signal == CTRL_C_EVENT) {
+        printf("Ctrl-C handled\n"); // do cleanup
+        stop_capture(0);
+    }
+
+    return TRUE;
+}
+#endif
+
 int main(int argc, char* argv[]) {
+#if defined(DEPTHSENSEGRABBER_DUMP_DELAY)
+    cout << "Delaying writing to capture end" << endl;
+#else
+    cout << "Writing on the fly" << endl;
+#endif
+
     int flagColorFormat = FORMAT_VGA_ID;
 
     widthDepth = FORMAT_QVGA_WIDTH;
@@ -468,8 +533,6 @@ int main(int argc, char* argv[]) {
             widthColor = FORMAT_VGA_WIDTH;
             heightColor = FORMAT_VGA_HEIGHT;
             nPixelsColorAcq = FORMAT_VGA_PIXELS;
-            pixelsColorAcq = pixelsColorAcqVGA;
-            pixelsDepthSync = pixelsDepthSyncVGA;
             break;
         case FORMAT_WXGA_ID:
             frameFormatColor = FRAME_FORMAT_WXGA_H;
@@ -477,7 +540,6 @@ int main(int argc, char* argv[]) {
             heightColor = FORMAT_WXGA_HEIGHT;
             nPixelsColorAcq = FORMAT_WXGA_PIXELS;
             pixelsColorAcq = pixelsColorAcqWXGA;
-            pixelsDepthSync = pixelsDepthSyncWXGA;
             break;
         case FORMAT_NHD_ID:
             frameFormatColor = FRAME_FORMAT_NHD;
@@ -485,7 +547,6 @@ int main(int argc, char* argv[]) {
             heightColor = FORMAT_NHD_HEIGHT;
             nPixelsColorAcq = FORMAT_NHD_PIXELS;
             pixelsColorAcq = pixelsColorAcqNHD;
-            pixelsDepthSync = pixelsDepthSyncNHD;
             break;
         default:
             printf("Unknown flagColorFormat");
@@ -507,30 +568,26 @@ int main(int argc, char* argv[]) {
     fclose(pFileReportDepth);
 
 
+    boost::thread capture_thread(capture);
+    printf("Starting capture thread - Ctrl-C to stop\n");
 
-    capture();
-    printf("Starting capture thread\n");
+#ifdef _MSC_VER
+    if (!SetConsoleCtrlHandler(consoleHandler, TRUE)) {
+        printf("\nERROR: Could not set control handler");
+        return 1;
+    }
+#else
+    struct sigaction sigIntHandler;
+    sigIntHandler.sa_handler = stop_capture;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, NULL);
+#endif
+
+    //while (1);
+    pause();
+
+    return 0;
+
 }
-
-void stop_capture()
-{
-    free(hasData);
-    free(pixelsDepthAcqVGASnapshot);
-    free(pixelsDepthAcqQVGASnapshot);
-    free(pixelsColorSyncVGASnapshot);
-    free(pixelsColorSyncQVGASnapshot);
-    free(pixelsColorAcqSnapshot);
-    free(pixelsDepthSyncSnapshot);
-    free(pixelsConfidenceAcqQVGASnapshot);
-
-    g_context.stopNodes();
-
-    if (g_cnode.isSet()) g_context.unregisterNode(g_cnode);
-    if (g_dnode.isSet()) g_context.unregisterNode(g_dnode);
-    if (g_anode.isSet()) g_context.unregisterNode(g_anode);
-
-    if (g_pProjHelper)
-        delete g_pProjHelper;
-}
-
 

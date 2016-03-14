@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <vector>
 #include <exception>
 
@@ -37,7 +38,7 @@ const uint16_t depthDeltaSync = 132; // DS325
 
 #define DEPTHSENSEGRABBER_USE_CONFIDENCE_MAP
 #if defined(DEPTHSENSEGRABBER_USE_CONFIDENCE_MAP)
-const uint16_t confidenceThreshold = 100;
+const uint16_t confidenceThreshold = 50;
 
 #endif // DEPTHSENSEGRABBER_USE_CONFIDENCE_MAP
 
@@ -108,7 +109,7 @@ uint16_t filterNew(uint16_t sample, float* w0, float* w1, float* w2, int n, floa
     }
     uint16_t filteredVal = static_cast<uint16_t>(x);
     bool isInRange = abs(filteredVal - sample) < maxDeltaDepth;
-    if (not isInRange) return sample;
+    if (!isInRange) return sample;
     return static_cast<uint16_t>(x);
 }
 
@@ -141,7 +142,8 @@ void postProcess(Report reportColor, Report reportDepth) {
         int depthHeight = frameDepth.getHeight();
 
         // Initialize color map corresponding to raw depth measurements
-        uint8_t colorSyncRGB[3*depthWidth*depthHeight];
+        //uint8_t colorSyncRGB[3 * depthWidth*depthHeight];
+		uint8_t* colorSyncRGB = new uint8_t[3 * depthWidth*depthHeight];
         for (int iPixelDepth = 0; iPixelDepth < depthWidth*depthHeight; iPixelDepth++) {
             for (int iDim = 0; iDim < 3; iDim++) {
                 colorSyncRGB[iPixelDepth*3 + iDim] = noDepthRGB[iDim];
@@ -213,7 +215,7 @@ void postProcess(Report reportColor, Report reportDepth) {
         cv::resize(depthMatAcq, depthMatInterpolated, depthMatInterpolated.size(), 0, 0, cv::INTER_LINEAR);
         cv::resize(uvMatAcq, uvMatInterpolated, uvMatInterpolated.size(), 0, 0, cv::INTER_LINEAR);
 
-        bool hasData[colorWidth*colorHeight];
+        bool* hasData = new bool[colorWidth*colorHeight];
         cv::Mat depthMatSync = cv::Mat(colorHeight, colorWidth, CV_16UC1, cv::Scalar(0));
         for (int rowColor = 0; rowColor < colorHeight; rowColor++) {
             for (int colColor = 0; colColor < colorWidth; colColor++) {
@@ -287,7 +289,9 @@ void postProcess(Report reportColor, Report reportDepth) {
         saveDepthFramePNM(filenameDepthSync, pixelsDepthSync,
                           colorWidth, colorHeight, timestamp);
 
-        delete pixelsDepthAcq;
+        delete[] pixelsDepthAcq;
+		delete[] colorSyncRGB;
+		delete[] hasData;
     }
 }
 

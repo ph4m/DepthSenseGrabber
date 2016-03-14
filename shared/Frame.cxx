@@ -46,14 +46,22 @@ void Frame::setCorrespFrame(int correspFrame) {
 
 string Frame::formatFilenameFrame(int indexFrame, string prefix) {
     char buff[100];
-    snprintf(buff, sizeof(buff), "%s_%05d.dat", prefix.c_str(), indexFrame);
+#ifdef _MSC_VER
+    _snprintf(buff, sizeof(buff), "%s_%05d.dat", prefix.c_str(), indexFrame);
+#else
+	snprintf(buff, sizeof(buff), "%s_%05d.dat", prefix.c_str(), indexFrame);
+#endif
     string filename = buff;
     return filename;
 }
 
 string Frame::formatFilenamePNM(int indexFrame, string prefix) {
     char buff[100];
-    snprintf(buff, sizeof(buff), "%s_%05d.pnm", prefix.c_str(), indexFrame);
+#ifdef _MSC_VER
+    _snprintf(buff, sizeof(buff), "%s_%05d.pnm", prefix.c_str(), indexFrame);
+#else
+	snprintf(buff, sizeof(buff), "%s_%05d.pnm", prefix.c_str(), indexFrame);
+#endif
     string filename = buff;
     return filename;
 }
@@ -61,7 +69,11 @@ string Frame::formatFilenamePNM(int indexFrame, string prefix) {
 
 string Frame::formatFilenameReport(string prefix) {
     char buff[100];
-    snprintf(buff, sizeof(buff), "%s_report.txt", prefix.c_str());
+#ifdef _MSC_VER
+    _snprintf(buff, sizeof(buff), "%s_report.txt", prefix.c_str());
+#else
+	snprintf(buff, sizeof(buff), "%s_report.txt", prefix.c_str());
+#endif
     string filename = buff;
     return filename;
 }

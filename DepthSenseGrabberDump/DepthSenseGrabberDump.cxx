@@ -45,60 +45,16 @@ int waitSecondsBeforeGrab = 1;
 int framerateDepth = 60;
 int framerateColor = 30;
 
-// Acquired data
-uint8_t pixelsColorAcqWXGA[3*FORMAT_WXGA_PIXELS];
-uint8_t pixelsColorAcqNHD[3*FORMAT_NHD_PIXELS];
-
-// UVmap-processed frames
-uint8_t pixelsColorSyncQVGA[3*FORMAT_QVGA_PIXELS];
-uint16_t pixelsDepthSyncQVGA[FORMAT_QVGA_PIXELS];
-uint16_t pixelsDepthSyncVGA[FORMAT_VGA_PIXELS];
-uint16_t pixelsDepthSyncWXGA[FORMAT_WXGA_PIXELS];
-uint16_t pixelsDepthSyncNHD[FORMAT_NHD_PIXELS];
-
-// Interpolated frames
-uint8_t pixelsColorSyncVGA[3*FORMAT_VGA_PIXELS];
-uint16_t pixelsDepthAcqVGA[FORMAT_VGA_PIXELS];
-
 
 FrameFormat frameFormatDepth = FRAME_FORMAT_QVGA; // Depth QVGA
-const int nPixelsDepthAcq = FORMAT_QVGA_PIXELS;
-
-
-int deltaPixelsIndAround[8] = {-641,-640,-639,-1,1,639,640,641};
-bool* hasData;
 
 // Color map configuration, comment out undesired parameters
 
 FrameFormat frameFormatColor;
 int widthDepth, heightDepth;
-int widthColor, heightColor, nPixelsColorAcq;
-uint8_t* pixelsColorAcq;
-
-// Snapshot data
-uint16_t* pixelsDepthAcqVGASnapshot;
-uint8_t* pixelsColorSyncVGASnapshot;
-uint16_t* pixelsDepthAcqQVGASnapshot;
-uint8_t* pixelsColorSyncQVGASnapshot;
-uint8_t* pixelsColorAcqSnapshot;
-uint16_t* pixelsDepthSyncSnapshot;
-uint16_t* pixelsConfidenceAcqQVGASnapshot;
+int widthColor, heightColor;
 
 
-const uint16_t noDepthDefault = 65535;
-const uint16_t noDepthThreshold = 2000;
-const uint16_t deltaDepthSync = 132; // DS325
-
-uint8_t noDepthBGR[3] = {0,0,0};
-
-
-int colorPixelInd, colorPixelRow, colorPixelCol;
-int debugInt;
-
-UV uvMapAcqQVGA[FORMAT_QVGA_PIXELS];
-UV uvMapVGA[FORMAT_VGA_PIXELS];
-
-double timestampSeconds;
 int timestamp;
 clock_t clockStartGrab;
 
@@ -464,14 +420,6 @@ void capture()
 void stop_capture(int s)
 {
     cout << "Stopping capture" << endl;
-    free(hasData);
-    free(pixelsDepthAcqVGASnapshot);
-    free(pixelsDepthAcqQVGASnapshot);
-    free(pixelsColorSyncVGASnapshot);
-    free(pixelsColorSyncQVGASnapshot);
-    free(pixelsColorAcqSnapshot);
-    free(pixelsDepthSyncSnapshot);
-    free(pixelsConfidenceAcqQVGASnapshot);
 
     g_context.stopNodes();
 
@@ -532,21 +480,16 @@ int main(int argc, char* argv[]) {
             frameFormatColor = FRAME_FORMAT_VGA;
             widthColor = FORMAT_VGA_WIDTH;
             heightColor = FORMAT_VGA_HEIGHT;
-            nPixelsColorAcq = FORMAT_VGA_PIXELS;
             break;
         case FORMAT_WXGA_ID:
             frameFormatColor = FRAME_FORMAT_WXGA_H;
             widthColor = FORMAT_WXGA_WIDTH;
             heightColor = FORMAT_WXGA_HEIGHT;
-            nPixelsColorAcq = FORMAT_WXGA_PIXELS;
-            pixelsColorAcq = pixelsColorAcqWXGA;
             break;
         case FORMAT_NHD_ID:
             frameFormatColor = FRAME_FORMAT_NHD;
             widthColor = FORMAT_NHD_WIDTH;
             heightColor = FORMAT_NHD_HEIGHT;
-            nPixelsColorAcq = FORMAT_NHD_PIXELS;
-            pixelsColorAcq = pixelsColorAcqNHD;
             break;
         default:
             printf("Unknown flagColorFormat");

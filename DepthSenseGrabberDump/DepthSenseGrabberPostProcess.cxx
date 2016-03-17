@@ -27,7 +27,7 @@ int framerateDepth = 60;
 int framerateColor = 30;
 
 const uint8_t noDepthRGB[3] = {255, 255, 255};
-const uint16_t depthDefault = 65535;
+const uint16_t depthDefault = 0;
 const uint16_t depthDeltaSync = 132; // DS325
 
 
@@ -273,6 +273,7 @@ void postProcess(Report reportColor, Report reportDepth) {
         string filenameColorAcq = Frame::formatFilenamePNM(indexFrameDepth, prefixColorAcq);
         saveColorFramePNM(filenameColorAcq, colorArray,
                           colorWidth, colorHeight, timestamp);
+        /*
         // Save synchronized color
         string prefixColorSync = "colorSync";
         string filenameColorSync = Frame::formatFilenamePNM(indexFrameDepth, prefixColorSync);
@@ -283,6 +284,7 @@ void postProcess(Report reportColor, Report reportDepth) {
         string filenameDepthAcq = Frame::formatFilenamePNM(indexFrameDepth, prefixDepthAcq);
         saveDepthFramePNM(filenameDepthAcq, pixelsDepthAcq,
                           depthWidth, depthHeight, timestamp);
+        */
         // Save synchronized depth
         string prefixDepthSync = "depthSync";
         string filenameDepthSync = Frame::formatFilenamePNM(indexFrameDepth, prefixDepthSync);
@@ -292,6 +294,7 @@ void postProcess(Report reportColor, Report reportDepth) {
         delete[] pixelsDepthAcq;
 		delete[] colorSyncRGB;
 		delete[] hasData;
+
     }
 }
 
@@ -320,112 +323,6 @@ int main(int argc, char* argv[])
     Frame::importReport(filenameReportDepth, &reportDepth);
 
     postProcess(reportColor, reportDepth);
-
-    /*
-    bool interpolateDepthFlag = 0;
-
-    bool saveColorAcqFlag   = 1;
-    bool saveDepthAcqFlag   = 0;
-    bool saveColorSyncFlag  = 0;
-    bool saveDepthSyncFlag  = 0;
-    bool saveConfidenceFlag = 0;
-
-    bool buildColorSyncFlag = saveColorSyncFlag;
-    bool buildDepthSyncFlag = saveDepthSyncFlag;
-    bool buildConfidenceFlag = saveConfidenceFlag;
-
-    int flagColorFormat = FORMAT_WXGA_ID; // VGA, WXGA or NHD
-
-    int colorWidth, colorHeight;
-    switch (flagColorFormat) {
-        case FORMAT_VGA_ID:
-            colorWidth = FORMAT_VGA_WIDTH;
-            colorHeight = FORMAT_VGA_HEIGHT;
-            break;
-        case FORMAT_WXGA_ID:
-            colorWidth = FORMAT_WXGA_WIDTH;
-            colorHeight = FORMAT_WXGA_HEIGHT;
-            break;
-        case FORMAT_NHD_ID:
-            colorWidth = FORMAT_NHD_WIDTH;
-            colorHeight = FORMAT_NHD_HEIGHT;
-            break;
-        default:
-            printf("Unknown flagColorFormat");
-            exit(EXIT_FAILURE);
-    }
-
-    int widthDepthAcq, heightDepthAcq;
-    if (interpolateDepthFlag) {
-        widthDepthAcq = FORMAT_VGA_WIDTH;
-        heightDepthAcq = FORMAT_VGA_HEIGHT;
-    } else {
-        widthDepthAcq = FORMAT_QVGA_WIDTH;
-        heightDepthAcq = FORMAT_QVGA_HEIGHT;
-    }
-
-
-    char fileNameColorAcq[50];
-    char fileNameDepthAcq[50];
-    char fileNameColorSync[50];
-    char fileNameDepthSync[50];
-    char fileNameConfidence[50];
-
-    char baseNameColorAcq[20] = "colorFrame_0_";
-    char baseNameDepthAcq[20] = "depthAcqFrame_0_";
-    char baseNameColorSync[20] = "colorSyncFrame_0_";
-    char baseNameDepthSync[20] = "depthFrame_0_";
-    char baseNameConfidence[30] = "depthConfidenceFrame_0_";
-
-    start_capture(flagColorFormat,
-                  interpolateDepthFlag,
-                  buildColorSyncFlag, buildDepthSyncFlag, buildConfidenceFlag);
-
-    uint16_t* pixelsDepthAcq;
-    uint8_t* pixelsColorSync;
-    uint8_t* pixelsColorAcq = getPixelsColorsAcq();
-    uint16_t* pixelsDepthSync = getPixelsDepthSync();
-    uint16_t* pixelsConfidenceQVGA = getPixelsConfidenceQVGA();
-    if (interpolateDepthFlag) {
-        pixelsDepthAcq = getPixelsDepthAcqVGA();
-        pixelsColorSync = getPixelsColorSyncVGA();
-    } else {
-        pixelsDepthAcq = getPixelsDepthAcqQVGA();
-        pixelsColorSync = getPixelsColorSyncQVGA();
-    }
-
-    int frameCountPrevious = -1;
-    while (true) {
-        int frameCount = getFrameCount();
-        int timestamp = getTimestamp();
-        if (frameCount > frameCountPrevious) {
-            frameCountPrevious = frameCount;
-            printf("%d\n", frameCount);
-
-            if (saveDepthAcqFlag) {
-                sprintf(fileNameDepthAcq,"%s%05u.pnm",baseNameDepthAcq,frameCount);
-                saveDepthFramePNM(fileNameDepthAcq, pixelsDepthAcq, widthDepthAcq, heightDepthAcq, timestamp);
-            }
-            if (saveColorAcqFlag) {
-                sprintf(fileNameColorAcq,"%s%05u.pnm",baseNameColorAcq,frameCount);
-                saveColorFramePNM(fileNameColorAcq, pixelsColorAcq, colorWidth, colorHeight, timestamp);
-            }
-            if (saveDepthSyncFlag) {
-                sprintf(fileNameDepthSync,"%s%05u.pnm",baseNameDepthSync,frameCount);
-                saveDepthFramePNM(fileNameDepthSync, pixelsDepthSync, colorWidth, colorHeight, timestamp);
-            }
-            if (saveColorSyncFlag) {
-                sprintf(fileNameColorSync,"%s%05u.pnm",baseNameColorSync,frameCount);
-                saveColorFramePNM(fileNameColorSync, pixelsColorSync, widthDepthAcq, heightDepthAcq, timestamp);
-            }
-            if (saveConfidenceFlag) {
-                sprintf(fileNameConfidence,"%s%05u.pnm",baseNameConfidence,frameCount);
-                saveDepthFramePNM(fileNameConfidence, pixelsConfidenceQVGA, FORMAT_QVGA_WIDTH, FORMAT_QVGA_HEIGHT, timestamp);
-            }
-        }
-    }
-    */
-
 
     return 0;
 }

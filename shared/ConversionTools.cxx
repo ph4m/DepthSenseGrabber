@@ -157,9 +157,9 @@ void saveDepthFramePNM(string fileName, uint16_t* pixels, int width, int height,
         fprintf(pFile, "#TIMESTAMP %i\n",timeStamp);
         fprintf(pFile, "%d %d\n%i\n", width, height, 65535);
 
-         //We have to swap the byte order to save "correctly Depth PNM" , this of course is slower
-         //but it is the "right thing to do"
-         swapDepthEndianness( pixels, width, height);
+        //We have to swap the byte order to save "correctly Depth PNM" , this of course is slower
+        //but it is the "right thing to do"
+        //swapDepthEndianness( pixels, width, height);
 
         fwrite(pixels,2,width*height,pFile);
         fflush(pFile);
@@ -483,4 +483,4 @@ void rescaleMap(DepthSense::Pointer<DepthSense::UV> src, UV* dst, int srcWidth, 
         }
     }
 }
- 
+

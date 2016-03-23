@@ -159,7 +159,7 @@ void saveDepthFramePNM(string fileName, uint16_t* pixels, int width, int height,
 
         //We have to swap the byte order to save "correctly Depth PNM" , this of course is slower
         //but it is the "right thing to do"
-        //swapDepthEndianness( pixels, width, height);
+        swapDepthEndianness( pixels, width, height);
 
         fwrite(pixels,2,width*height,pFile);
         fflush(pFile);

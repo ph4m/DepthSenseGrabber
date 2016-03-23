@@ -28,7 +28,7 @@ int framerateColor = 30;
 
 const uint8_t noDepthRGB[3] = {255, 255, 255};
 const uint16_t depthDefault = 0;
-const uint16_t depthDeltaSync = 132; // DS325
+const uint16_t depthDeltaSync = 0; //132; // DS325
 
 
 /**********************************************************
@@ -42,13 +42,14 @@ const uint16_t confidenceThreshold = 50;
 
 #endif // DEPTHSENSEGRABBER_USE_CONFIDENCE_MAP
 
+#define DEPTHSENSEGRABBER_FILTER_DEPTHACQ_WITH_CONFIDENCE
 
 /*******************************************************
  * Spatial smoothing with Gaussian blur                *
  * Could be improved by only filtering up to the edges *
  *******************************************************/
 
-#define DEPTHSENSEGRABBER_SMOOTH_SPATIAL
+//#define DEPTHSENSEGRABBER_SMOOTH_SPATIAL
 
 int kernel_length = 3;
 
@@ -57,7 +58,7 @@ int kernel_length = 3;
  * http://www.exstrom.com/journal/sigproc/ *
  *******************************************/
 
-#define DEPTHSENSEGRABBER_SMOOTH_TEMPORAL
+//#define DEPTHSENSEGRABBER_SMOOTH_TEMPORAL
 
 uint16_t maxDeltaDepth = 50;
 
@@ -159,6 +160,10 @@ void postProcess(Report reportColor, Report reportDepth) {
                 uint16_t depthVal = depthArray[iPixelDepth];
                 float uvValU = uvArray[2*iPixelDepth];
                 float uvValV = uvArray[2*iPixelDepth+1];
+#ifdef DEPTHSENSEGRABBER_FILTER_DEPTHACQ_WITH_CONFIDENCE
+                if (confidenceArray[iPixelDepth] < confidenceThreshold)
+                    depthVal = depthDefault;
+#endif
                 depthMatAcq.at<uint16_t>(cv::Point(colDepth, rowDepth)) = depthVal;
                 uvMatAcq.at<cv::Vec2f>(cv::Point(colDepth, rowDepth))[0] = uvValU;
                 uvMatAcq.at<cv::Vec2f>(cv::Point(colDepth, rowDepth))[1] = uvValV;
@@ -279,17 +284,19 @@ void postProcess(Report reportColor, Report reportDepth) {
         string filenameColorSync = Frame::formatFilenamePNM(indexFrameDepth, prefixColorSync);
         saveColorFramePNM(filenameColorSync, colorSyncRGB,
                           depthWidth, depthHeight, timestamp);
+        */
         // Save raw depth
         string prefixDepthAcq = "depthAcq";
         string filenameDepthAcq = Frame::formatFilenamePNM(indexFrameDepth, prefixDepthAcq);
         saveDepthFramePNM(filenameDepthAcq, pixelsDepthAcq,
                           depthWidth, depthHeight, timestamp);
-        */
+        /*
         // Save synchronized depth
         string prefixDepthSync = "depthSync";
         string filenameDepthSync = Frame::formatFilenamePNM(indexFrameDepth, prefixDepthSync);
         saveDepthFramePNM(filenameDepthSync, pixelsDepthSync,
                           colorWidth, colorHeight, timestamp);
+        */
 
         delete[] pixelsDepthAcq;
 		delete[] colorSyncRGB;

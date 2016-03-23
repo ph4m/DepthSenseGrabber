@@ -1,0 +1,2 @@
+h=9, w=6
+Square side length: 36mm

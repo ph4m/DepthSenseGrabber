@@ -284,18 +284,18 @@ void postProcess(Report reportColor, Report reportDepth) {
         string filenameColorSync = Frame::formatFilenamePNM(indexFrameDepth, prefixColorSync);
         saveColorFramePNM(filenameColorSync, colorSyncRGB,
                           depthWidth, depthHeight, timestamp);
-        */
         // Save raw depth
         string prefixDepthAcq = "depthAcq";
         string filenameDepthAcq = Frame::formatFilenamePNM(indexFrameDepth, prefixDepthAcq);
         saveDepthFramePNM(filenameDepthAcq, pixelsDepthAcq,
                           depthWidth, depthHeight, timestamp);
-        /*
+        */
         // Save synchronized depth
         string prefixDepthSync = "depthSync";
         string filenameDepthSync = Frame::formatFilenamePNM(indexFrameDepth, prefixDepthSync);
         saveDepthFramePNM(filenameDepthSync, pixelsDepthSync,
                           colorWidth, colorHeight, timestamp);
+        /*
         */
 
         delete[] pixelsDepthAcq;
